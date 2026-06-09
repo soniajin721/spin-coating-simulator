@@ -67,17 +67,18 @@ t = 0
 h = h0
 
 while t <= total_time and h > 0:
+    time_list.append(t)
+    h_list.append(h * 1e6)
+
     eta = eta0 * np.exp(beta * t)
+    eta_list.append(eta)
+
     dhdt = -(2 * rho * omega**2 / (3 * eta)) * h**3 - E
 
     h += dhdt * dt
 
     if h < 0:
         h = 0
-
-    time_list.append(t)
-    h_list.append(h * 1e6)
-    eta_list.append(eta)
 
     t += dt
 
@@ -91,13 +92,14 @@ h_val = h0
 h_val_list = []
 
 for _ in time_arr:
+    h_val_list.append(h_val * 1e6)
+
     dhdt_val = -(2 * rho * omega**2 / (3 * eta0)) * h_val**3
+
     h_val += dhdt_val * dt
 
     if h_val < 0:
         h_val = 0
-
-    h_val_list.append(h_val * 1e6)
 
 h_validation = np.array(h_val_list)
 
