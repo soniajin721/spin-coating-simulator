@@ -22,10 +22,73 @@ st.sidebar.caption(
     "validation results, and coating uniformity."
 )
 
-rpm = st.sidebar.slider("Rotational Speed (RPM)", 500, 6000, 3000)
-eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.005, 0.5, 0.05)
-h0_um = st.sidebar.slider("Initial Thickness (μm)", 10, 300, 100)
-E_um_s = st.sidebar.slider("Evaporation Rate (μm/s)", 0.001, 1.0, 0.05)
+st.sidebar.markdown("### Rotational Speed (RPM)")
+rpm_num = st.sidebar.number_input(
+    "Enter RPM",
+    min_value=500,
+    max_value=6000,
+    value=3000,
+    step=100
+)
+rpm = st.sidebar.slider(
+    "Adjust RPM",
+    min_value=500,
+    max_value=6000,
+    value=rpm_num,
+    step=5
+)
+
+st.sidebar.markdown("### Initial Viscosity (Pa·s)")
+eta0_num = st.sidebar.number_input(
+    "Enter Initial Viscosity",
+    min_value=0.005,
+    max_value=0.5,
+    value=0.05,
+    step=0.005,
+    format="%.3f"
+)
+eta0 = st.sidebar.slider(
+    "Adjust Initial Viscosity",
+    min_value=0.005,
+    max_value=0.5,
+    value=eta0_num,
+    step=0.005,
+    format="%.3f"
+)
+
+st.sidebar.markdown("### Initial Thickness (μm)")
+h0_num = st.sidebar.number_input(
+    "Enter Initial Thickness",
+    min_value=10,
+    max_value=300,
+    value=100,
+    step=10
+)
+h0_um = st.sidebar.slider(
+    "Adjust Initial Thickness",
+    min_value=10,
+    max_value=300,
+    value=h0_num,
+    step=1
+)
+
+st.sidebar.markdown("### Evaporation Rate (μm/s)")
+E_num = st.sidebar.number_input(
+    "Enter Evaporation Rate",
+    min_value=0.001,
+    max_value=1.0,
+    value=0.05,
+    step=0.001,
+    format="%.3f"
+)
+E_um_s = st.sidebar.slider(
+    "Adjust Evaporation Rate",
+    min_value=0.001,
+    max_value=1.0,
+    value=E_num,
+    step=0.001,
+    format="%.3f"
+)
 
 # Constants
 rho = 1000
