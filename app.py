@@ -22,11 +22,70 @@ st.sidebar.caption(
     "validation results, and coating uniformity."
 )
 
-rpm = st.sidebar.slider("Rotational Speed (RPM)", 500, 6000, 3000)
-eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.005, 0.5, 0.05)
-h0_um = st.sidebar.slider("Initial Thickness (μm)", 10, 300, 100)
-E_um_s = st.sidebar.slider("Evaporation Rate (μm/s)", 0.001, 1.0, 0.05)
+rpm = st.sidebar.number_input(
+    "Rotational Speed (RPM)",
+    min_value=500,
+    max_value=6000,
+    value=3000,
+    step=100
+)
 
+rpm = st.sidebar.slider(
+    "Adjust RPM",
+    min_value=500,
+    max_value=6000,
+    value=int(rpm),
+    step=50
+)
+eta0 = st.sidebar.number_input(
+    "Initial Viscosity (Pa·s)",
+    min_value=0.005,
+    max_value=0.5,
+    value=0.05,
+    step=0.005,
+    format="%.3f"
+)
+
+eta0 = st.sidebar.slider(
+    "Adjust Initial Viscosity",
+    min_value=0.005,
+    max_value=0.5,
+    value=float(eta0),
+    step=0.005,
+    format="%.3f"
+)
+h0_um = st.sidebar.number_input(
+    "Initial Thickness (μm)",
+    min_value=10,
+    max_value=300,
+    value=100,
+    step=10
+)
+
+h0_um = st.sidebar.slider(
+    "Adjust Initial Thickness",
+    min_value=10,
+    max_value=300,
+    value=int(h0_um),
+    step=10
+)
+E_um_s = st.sidebar.number_input(
+    "Evaporation Rate (μm/s)",
+    min_value=0.001,
+    max_value=1.0,
+    value=0.05,
+    step=0.001,
+    format="%.3f"
+)
+
+E_um_s = st.sidebar.slider(
+    "Adjust Evaporation Rate",
+    min_value=0.001,
+    max_value=1.0,
+    value=float(E_um_s),
+    step=0.001,
+    format="%.3f"
+)
 # Constants
 rho = 1000
 beta = 0.15
@@ -96,10 +155,17 @@ else:
     t_gel = 0
 
 # Edge Bead Model
-# Fixed phenomenological edge-bead model used for qualitative radial visualization.
 r = np.linspace(0, wafer_radius_mm, 200)
 
-edge_strength = 0.12
+# Phenomenological edge-bead model
+# Base condition: 3000 rpm, 0.05 Pa·s gives about 11.85% uniformity error.
+# Higher rpm reduces edge-bead formation, while lower viscosity improves radial spreading.
+rpm_factor = 3000 / rpm
+viscosity_factor = (eta0 / 0.05) ** 1.4
+
+edge_strength = 0.12 * rpm_factor * viscosity_factor
+edge_strength = np.clip(edge_strength, 0.005, 0.40)
+
 edge_width = 0.12 * wafer_radius_mm
 
 edge_bead = final_thickness * edge_strength * np.exp(
