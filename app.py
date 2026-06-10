@@ -22,73 +22,10 @@ st.sidebar.caption(
     "validation results, and coating uniformity."
 )
 
-st.sidebar.markdown("### Rotational Speed (RPM)")
-rpm_num = st.sidebar.number_input(
-    "Enter RPM",
-    min_value=500,
-    max_value=6000,
-    value=3000,
-    step=100
-)
-rpm = st.sidebar.slider(
-    "Adjust RPM",
-    min_value=500,
-    max_value=6000,
-    value=rpm_num,
-    step=5
-)
-
-st.sidebar.markdown("### Initial Viscosity (Pa·s)")
-eta0_num = st.sidebar.number_input(
-    "Enter Initial Viscosity",
-    min_value=0.005,
-    max_value=0.5,
-    value=0.05,
-    step=0.005,
-    format="%.3f"
-)
-eta0 = st.sidebar.slider(
-    "Adjust Initial Viscosity",
-    min_value=0.005,
-    max_value=0.5,
-    value=eta0_num,
-    step=0.005,
-    format="%.3f"
-)
-
-st.sidebar.markdown("### Initial Thickness (μm)")
-h0_num = st.sidebar.number_input(
-    "Enter Initial Thickness",
-    min_value=10,
-    max_value=300,
-    value=100,
-    step=10
-)
-h0_um = st.sidebar.slider(
-    "Adjust Initial Thickness",
-    min_value=10,
-    max_value=300,
-    value=h0_num,
-    step=1
-)
-
-st.sidebar.markdown("### Evaporation Rate (μm/s)")
-E_num = st.sidebar.number_input(
-    "Enter Evaporation Rate",
-    min_value=0.001,
-    max_value=1.0,
-    value=0.05,
-    step=0.001,
-    format="%.3f"
-)
-E_um_s = st.sidebar.slider(
-    "Adjust Evaporation Rate",
-    min_value=0.001,
-    max_value=1.0,
-    value=E_num,
-    step=0.001,
-    format="%.3f"
-)
+rpm = st.sidebar.slider("Rotational Speed (RPM)", 500, 6000, 3000)
+eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.005, 0.5, 0.05)
+h0_um = st.sidebar.slider("Initial Thickness (μm)", 10, 300, 100)
+E_um_s = st.sidebar.slider("Evaporation Rate (μm/s)", 0.001, 1.0, 0.05)
 
 # Constants
 rho = 1000
@@ -103,7 +40,7 @@ omega = rpm * 2 * np.pi / 60
 h0 = h0_um * 1e-6
 E = E_um_s * 1e-6
 
-# Main Simulation: evaporation + viscosity growth
+# Main Simulation
 time_list = []
 h_list = []
 eta_list = []
@@ -145,7 +82,7 @@ for _ in time_arr:
 
 h_validation = np.array(h_val_list)
 
-# Analytical EBP Solution: constant viscosity, no evaporation
+# Analytical EBP Solution
 K = (4 * rho * omega**2 * h0**2) / (3 * eta0)
 h_ana = (h0 / np.sqrt(1 + K * time_arr)) * 1e6
 
@@ -159,16 +96,10 @@ else:
     t_gel = 0
 
 # Edge Bead Model
+# Fixed phenomenological edge-bead model used for qualitative radial visualization.
 r = np.linspace(0, wafer_radius_mm, 200)
 
-# Phenomenological edge-bead strength:
-# Higher rpm improves radial spreading, while higher viscosity increases edge accumulation.
-rpm_factor = 3000 / rpm
-viscosity_factor = eta0 / 0.05
-
-edge_strength = 0.12 * rpm_factor * viscosity_factor
-edge_strength = np.clip(edge_strength, 0.02, 0.40)
-
+edge_strength = 0.12
 edge_width = 0.12 * wafer_radius_mm
 
 edge_bead = final_thickness * edge_strength * np.exp(
@@ -240,11 +171,7 @@ with tab1:
 
     fig3, ax3 = plt.subplots(figsize=(8, 4))
 
-    ax3.plot(
-        r,
-        radial_thickness,
-        linewidth=2
-    )
+    ax3.plot(r, radial_thickness, linewidth=2)
 
     ax3.set_xlabel("Radial Position (mm)")
     ax3.set_ylabel("Film Thickness (μm)")
@@ -316,12 +243,12 @@ with tab2:
     )
 
 with tab3:
-    st.subheader("Challenge Mode: Find Conditions for ±2% Uniformity")
+    st.subheader("Challenge Mode: ±2% Uniformity Specification")
 
     st.write(
         "This mode evaluates whether the selected process condition satisfies the target "
-        "coating-uniformity specification. Users can adjust rotational speed and viscosity "
-        "in the sidebar to explore suitable operating conditions."
+        "coating-uniformity specification. Users can adjust process parameters in the sidebar "
+        "and immediately check the resulting uniformity error."
     )
 
     if uniformity_error <= target_uniformity:
@@ -338,11 +265,11 @@ with tab3:
     st.markdown("""
     **Design interpretation**
 
-    - Higher rotational speed generally reduces final film thickness and improves radial spreading.
-    - Lower viscosity promotes stronger radial flow and can improve uniformity.
-    - Excessively high viscosity suppresses radial spreading and may increase thickness variation.
+    - Higher rotational speed generally reduces final film thickness.
+    - Lower viscosity promotes stronger radial spreading.
     - Solvent evaporation and viscosity growth reduce radial flow over time.
     - Edge-bead formation can increase radial non-uniformity near the wafer boundary.
+    - Process optimization requires balancing final thickness, uniformity, and edge-bead behavior.
     """)
 
 st.success("Simulation completed successfully.")
