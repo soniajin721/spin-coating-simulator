@@ -10,22 +10,40 @@ st.set_page_config(
 st.title("Spin Coating Thin-Film Simulator")
 
 st.markdown("""
-This simulator is based on the Emslie–Bonner–Peck model with solvent evaporation
-and time-dependent viscosity growth. Users can explore how spin-coating parameters
-affect film thickness, radial uniformity, and edge-bead behavior.
+This simulator is based on the Emslie–Bonner–Peck model with
+solvent evaporation and time-dependent viscosity growth.
 """)
 
 # Sidebar Inputs
-st.sidebar.header("Process Inputs")
-st.sidebar.caption(
-    "Adjust spin-coating parameters and observe their effects on thickness evolution, "
-    "validation results, and coating uniformity."
+st.sidebar.header("Process Parameters")
+
+rpm = st.sidebar.slider(
+    "Rotational Speed (RPM)",
+    500,
+    6000,
+    3000
 )
 
-rpm = st.sidebar.slider("Rotational Speed (RPM)", 500, 6000, 3000)
-eta0 = st.sidebar.slider("Initial Viscosity (Pa·s)", 0.005, 0.5, 0.05)
-h0_um = st.sidebar.slider("Initial Thickness (μm)", 10, 300, 100)
-E_um_s = st.sidebar.slider("Evaporation Rate (μm/s)", 0.001, 1.0, 0.05)
+eta0 = st.sidebar.slider(
+    "Initial Viscosity (Pa·s)",
+    0.005,
+    0.5,
+    0.05
+)
+
+h0_um = st.sidebar.slider(
+    "Initial Thickness (μm)",
+    10,
+    300,
+    100
+)
+
+E_um_s = st.sidebar.slider(
+    "Evaporation Rate (μm/s)",
+    0.001,
+    1.0,
+    0.05
+)
 
 # Constants
 rho = 1000
@@ -40,7 +58,7 @@ omega = rpm * 2 * np.pi / 60
 h0 = h0_um * 1e-6
 E = E_um_s * 1e-6
 
-# Main Simulation
+# Main Simulation: evaporation + viscosity growth
 time_list = []
 h_list = []
 eta_list = []
@@ -56,6 +74,7 @@ while t <= total_time and h > 0:
     eta_list.append(eta)
 
     dhdt = -(2 * rho * omega**2 / (3 * eta)) * h**3 - E
+
     h += dhdt * dt
 
     if h < 0:
@@ -67,13 +86,16 @@ time_arr = np.array(time_list)
 h_num = np.array(h_list)
 eta_arr = np.array(eta_list)
 
-# Validation Simulation
+# Validation Simulation: beta = 0, E = 0
+# This numerical solution uses the same physical assumptions as the analytical EBP solution.
 h_val = h0
 h_val_list = []
 
 for _ in time_arr:
     h_val_list.append(h_val * 1e6)
+
     dhdt_val = -(2 * rho * omega**2 / (3 * eta0)) * h_val**3
+
     h_val += dhdt_val * dt
 
     if h_val < 0:
@@ -81,9 +103,12 @@ for _ in time_arr:
 
 h_validation = np.array(h_val_list)
 
-# Analytical EBP Solution
+# Analytical EBP Solution: constant viscosity, no evaporation
 K = (4 * rho * omega**2 * h0**2) / (3 * eta0)
-h_ana = (h0 / np.sqrt(1 + K * time_arr)) * 1e6
+
+h_ana = (
+    h0 / np.sqrt(1 + K * time_arr)
+) * 1e6
 
 # Final Thickness
 final_thickness = h_num[-1]
@@ -111,154 +136,153 @@ max_h = np.max(radial_thickness)
 min_h = np.min(radial_thickness)
 
 uniformity_error = ((max_h - min_h) / avg_h) * 100
-target_uniformity = 2.0
 
 # Metrics
-st.subheader("Simulation Summary")
-
 col1, col2, col3, col4, col5 = st.columns(5)
 
-col1.metric("Final Thickness", f"{final_thickness:.2f} μm")
-col2.metric("Average Thickness", f"{avg_h:.2f} μm")
-col3.metric("Max Thickness", f"{max_h:.2f} μm")
-col4.metric("Uniformity Error", f"{uniformity_error:.2f}%")
-col5.metric("Predicted t_gel", f"{t_gel:.1f} s")
-
-if uniformity_error <= target_uniformity:
-    st.success(
-        f"✅ Uniformity target satisfied: {uniformity_error:.2f}% ≤ ±{target_uniformity:.1f}%"
-    )
-else:
-    st.error(
-        f"❌ Uniformity target not satisfied: {uniformity_error:.2f}% > ±{target_uniformity:.1f}%"
-    )
-
-st.caption(
-    "Uniformity error represents radial thickness variation across the wafer. "
-    "A lower value indicates a more uniform photoresist coating."
+col1.metric(
+    "Final Thickness",
+    f"{final_thickness:.2f} μm"
 )
 
-# Tabs
-tab1, tab2, tab3 = st.tabs([
-    "Core Simulation",
-    "Validation",
-    "Challenge Mode"
-])
+col2.metric(
+    "Average Thickness",
+    f"{avg_h:.2f} μm"
+)
 
-with tab1:
-    st.subheader("Film Thickness Evolution")
+col3.metric(
+    "Max Thickness",
+    f"{max_h:.2f} μm"
+)
 
-    fig1, ax1 = plt.subplots(figsize=(8, 4))
-    ax1.plot(
-        time_arr,
-        h_num,
-        label="Numerical Simulation: evaporation + viscosity growth",
-        linewidth=2
+col4.metric(
+    "Uniformity Error",
+    f"{uniformity_error:.2f}%"
+)
+
+col5.metric(
+    "Predicted t_gel",
+    f"{t_gel:.1f} s"
+)
+
+# Main Simulation Plot
+st.subheader("Film Thickness Evolution")
+
+fig1, ax1 = plt.subplots(figsize=(8, 4))
+
+ax1.plot(
+    time_arr,
+    h_num,
+    label="Numerical Simulation: evaporation + viscosity growth",
+    linewidth=2
+)
+
+ax1.set_xlabel("Time (s)")
+ax1.set_ylabel("Film Thickness (μm)")
+ax1.set_title("Film Thickness Evolution")
+ax1.grid(True)
+ax1.legend()
+
+st.pyplot(fig1)
+
+# Validation Plot
+st.subheader("Validation View: Numerical EBP vs Analytical EBP")
+
+fig2, ax2 = plt.subplots(figsize=(8, 4))
+
+ax2.plot(
+    time_arr,
+    h_validation,
+    label="Numerical EBP: β = 0, E = 0",
+    linewidth=2
+)
+
+ax2.plot(
+    time_arr,
+    h_ana,
+    "--",
+    label="Analytical EBP Solution",
+    linewidth=2
+)
+
+ax2.set_xlabel("Time (s)")
+ax2.set_ylabel("Film Thickness (μm)")
+ax2.set_title("Validation of Numerical Solver")
+ax2.grid(True)
+ax2.legend()
+
+st.pyplot(fig2)
+
+# Radial Thickness Plot
+st.subheader("Radial Thickness Distribution")
+
+fig3, ax3 = plt.subplots(figsize=(8, 4))
+
+ax3.plot(
+    r,
+    radial_thickness,
+    linewidth=2
+)
+
+ax3.set_xlabel("Radial Position (mm)")
+ax3.set_ylabel("Film Thickness (μm)")
+ax3.set_title("Radial Thickness Distribution with Simplified Edge Bead Model")
+ax3.grid(True)
+
+st.pyplot(fig3)
+
+st.caption(
+    "Note: The edge-bead profile is a simplified qualitative model used for visualization, "
+    "not a full hydrodynamic edge-bead simulation."
+)
+
+# Validation Table
+st.subheader("Validation Results")
+
+check_times = [1, 5, 10, 30, 60]
+
+table_data = []
+
+for ct in check_times:
+    idx = np.argmin(np.abs(time_arr - ct))
+
+    num_val = h_validation[idx]
+    ana_val = h_ana[idx]
+
+    error = abs(num_val - ana_val) / ana_val * 100
+
+    table_data.append(
+        {
+            "Time (s)": ct,
+            "Numerical EBP (μm)": round(num_val, 3),
+            "Analytical EBP (μm)": round(ana_val, 3),
+            "Error (%)": round(error, 2)
+        }
     )
-    ax1.set_xlabel("Time (s)")
-    ax1.set_ylabel("Film Thickness (μm)")
-    ax1.set_title("Film Thickness Evolution")
-    ax1.grid(True)
-    ax1.legend()
 
-    st.pyplot(fig1)
+st.table(table_data)
 
-    st.subheader("Radial Thickness Distribution")
+# Challenge Mode
+st.subheader("Challenge Mode: ±2% Uniformity Specification")
 
-    fig3, ax3 = plt.subplots(figsize=(8, 4))
-    ax3.plot(r, radial_thickness, linewidth=2)
-    ax3.set_xlabel("Radial Position (mm)")
-    ax3.set_ylabel("Film Thickness (μm)")
-    ax3.set_title("Radial Thickness Distribution with Simplified Edge Bead Model")
-    ax3.grid(True)
-
-    st.pyplot(fig3)
-
-    st.caption(
-        "Note: The edge-bead profile is a simplified qualitative model used for visualization, "
-        "not a full hydrodynamic edge-bead simulation."
+if uniformity_error <= 2:
+    st.success(
+        f"This condition satisfies the ±2% uniformity specification. "
+        f"Uniformity error = {uniformity_error:.2f}%"
+    )
+else:
+    st.warning(
+        f"This condition does not satisfy the ±2% uniformity specification. "
+        f"Uniformity error = {uniformity_error:.2f}%"
     )
 
-with tab2:
-    st.subheader("Validation View: Numerical EBP vs Analytical EBP")
+st.markdown("""
+**Design interpretation**
 
-    fig2, ax2 = plt.subplots(figsize=(8, 4))
-    ax2.plot(
-        time_arr,
-        h_validation,
-        label="Numerical EBP: β = 0, E = 0",
-        linewidth=2
-    )
-    ax2.plot(
-        time_arr,
-        h_ana,
-        "--",
-        label="Analytical EBP Solution",
-        linewidth=2
-    )
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Film Thickness (μm)")
-    ax2.set_title("Validation of Numerical Solver")
-    ax2.grid(True)
-    ax2.legend()
-
-    st.pyplot(fig2)
-
-    st.subheader("Validation Results")
-
-    check_times = [1, 5, 10, 30, 60]
-    table_data = []
-
-    for ct in check_times:
-        idx = np.argmin(np.abs(time_arr - ct))
-        num_val = h_validation[idx]
-        ana_val = h_ana[idx]
-        error = abs(num_val - ana_val) / ana_val * 100
-
-        table_data.append(
-            {
-                "Time (s)": ct,
-                "Numerical EBP (μm)": round(num_val, 3),
-                "Analytical EBP (μm)": round(ana_val, 3),
-                "Error (%)": round(error, 2)
-            }
-        )
-
-    st.table(table_data)
-
-    st.info(
-        "Validation is performed under the analytical EBP limit: constant viscosity and zero evaporation. "
-        "Small errors mainly come from the Forward Euler time discretization."
-    )
-
-with tab3:
-    st.subheader("Challenge Mode: Find Conditions for ±2% Uniformity")
-
-    st.write(
-        "This mode evaluates whether the selected process condition satisfies the target "
-        "coating-uniformity specification. Users can adjust rotational speed and viscosity "
-        "in the sidebar to explore suitable operating conditions."
-    )
-
-    if uniformity_error <= target_uniformity:
-        st.success(
-            f"✅ Passed: This condition satisfies the ±2% uniformity specification. "
-            f"Uniformity error = {uniformity_error:.2f}%"
-        )
-    else:
-        st.warning(
-            f"⚠️ Failed: This condition does not satisfy the ±2% uniformity specification. "
-            f"Uniformity error = {uniformity_error:.2f}%"
-        )
-
-    st.markdown("""
-    **Design interpretation**
-
-    - Higher rotational speed generally reduces final film thickness and improves radial spreading.
-    - Lower viscosity promotes stronger radial flow and can improve uniformity.
-    - Excessively high viscosity suppresses radial spreading and may increase thickness variation.
-    - Solvent evaporation and viscosity growth reduce radial flow over time.
-    - Edge-bead formation can increase radial non-uniformity near the wafer boundary.
-    """)
+- Higher rotational speed generally reduces final film thickness.
+- Lower viscosity promotes stronger radial spreading.
+- Solvent evaporation and viscosity growth reduce radial flow over time.
+- Edge-bead formation can increase radial non-uniformity near the wafer boundary.
+""")
 
 st.success("Simulation completed successfully.")
